@@ -1,10 +1,11 @@
 taxonLookupTable_ID <- function(x){
+  x<-as.data.frame(apply(x,2,as.factor))
   # Calculate the number of unique values
   totaltaxa<-length(c(levels(x$Kingdom),levels(x$Phylum),levels(x$Class),levels(x$Order),
                       levels(x$Family),levels(x$Genus),levels(x$Species)))
   #print(totaltaxa)
   # Output matrix
-  lookup<-matrix(NA,totaltaxa,7)
+  lookup<-as.data.frame(matrix(NA,totaltaxa,7))
   colnames(lookup)<-c('id','Taxon','Rank','Author','Source','Parent','OrigID')
   # Keep trace of the record number
   key=0
@@ -14,7 +15,7 @@ taxonLookupTable_ID <- function(x){
     #print(key)
     # Keep trace of parent Kingdom id
     parentvalue=key
-    lookup[key,]<-c(key,k,'Kingdom',NA,NA,parentvalue,NA)
+    lookup[key,]<-c(key,k,'Kingdom',NA,NA,NA,NA)
     # Select unique values from Phylum rank
     phyla<-levels(droplevels(x[which(x$Kingdom==k),'Phylum']))
     for(p in phyla){
@@ -46,8 +47,9 @@ taxonLookupTable_ID <- function(x){
               for(s in species){
                 key=key+1
                 author<-as.character(x[which(x$Species==s),'Author'])
-                src<-as.character(x[which(x$Species==s),'Source'])
-                origid<-as.character(x[which(x$Species==s),'id'])
+                src<-as.character(x[which(x$Species==s),'source'])
+                origid<-as.character(x[which(x$Species==s),'origID'])
+                #print(c(key,s,'Species',author,src,parentgenus,origid))
                 lookup[key,]<-c(key,s,'Species',author,src,parentgenus,origid)
               }
             }
@@ -56,7 +58,9 @@ taxonLookupTable_ID <- function(x){
       }
     }
   }
-  return(as.data.frame(lookup))
+  lookup$id<-as.integer(lookup$id)
+  lookup$Parent<-as.integer(lookup$Parent)
+  return(lookup)
 }
 
 # Select unique values from taxon rank

@@ -1,4 +1,5 @@
 checkConsistency <- function(x){
+  x<-as.data.frame(apply(x,2,as.factor))
   for(t in levels(x$Species)){
     if(length(levels(droplevels(x[which(x$Species==t),'Genus'])))>1){
       print(cat(t,length(levels(droplevels(x[which(x$Species==t),'Genus'])))))
