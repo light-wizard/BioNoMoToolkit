@@ -6,7 +6,7 @@ authority_search <- function(taxoncatalogue){
       taxoncatalogue$Author[i]<-tryCatch(as.character(taxon_authorship(tsn=as.numeric(get_tsn(taxoncatalogue$Taxon[i])[1]))[1,1]),
                                          error=function(err){
                                            if(err[1]=='Column index must be at most 0 if positive, not 1'){
-                                             message(cat('Taxon not found:',as.character(taxoncatalogue$Taxon[i])))
+                                             message(paste('Taxon not found:',as.character(taxoncatalogue$Taxon[i])))
                                            } else {
                                              message(err)
                                            }
