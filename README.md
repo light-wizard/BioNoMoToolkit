@@ -31,6 +31,7 @@ Before using the function, be sure your R installation meets all of its dependen
 * _taxize_
 * _ggplot2_
 * _rgbif_
+* _maps_
 
 You can install those with the `install.packages` command in R prompt.
 
@@ -101,18 +102,18 @@ _**Reading and using the results**_
 
 |Column name    |Data type  |Details                                               |
 |---            |:---:      |:---:                                                 |
-|Kingdom        |CHAR/FACTOR|Name of Kingdom                                       |
-|Phylum         |CHAR/FACTOR|Name of Phylum                                        |
-|Class          |CHAR/FACTOR|Name of Class                                         |
-|Order          |CHAR/FACTOR|Name of Order                                         |
-|Family         |CHAR/FACTOR|Name of Phylum                                        |
-|Genus          |CHAR/FACTOR|Name of Genus                                         |
-|Species        |CHAR/FACTOR|Name of Species                                       |
-|Author         |CHAR/FACTOR|Name of the Author (as in input list)                 |
-|source         |CHAR/FACTOR|Source of species name information (as in input list) |
-|origID         |CHAR/FACTOR|original species code (as in input list)              |
-|notes          |CHAR/FACTOR|comments on the output (see below)                    |
-|origSp         |CHAR/FACTOR|Species name (as in input list)                       |
+|Kingdom        |CHAR       |Name of Kingdom                                       |
+|Phylum         |CHAR       |Name of Phylum                                        |
+|Class          |CHAR       |Name of Class                                         |
+|Order          |CHAR       |Name of Order                                         |
+|Family         |CHAR       |Name of Phylum                                        |
+|Genus          |CHAR       |Name of Genus                                         |
+|Species        |CHAR       |Name of Species                                       |
+|Author         |CHAR       |Name of the Author (as in input list)                 |
+|source         |CHAR       |Source of species name information (as in input list) |
+|origID         |CHAR       |original species code (as in input list)              |
+|notes          |CHAR       |comments on the output (see below)                    |
+|origSp         |CHAR       |Species name (as in input list)                       |
 
 The user must control that the table is complete and no information is missing. Missing records will be marked with 'NOT FOUND' in the 'notes' column. In those cases, the search can be repeated on a different database (**db** parameter). Sometimes, the species name found on the remote database can be different from the original provided by the user: in this cases, records will be marked with 'INCONGRUENCE' in the 'notes' column. Please check those records carefully before proceeding. Another possible state of the 'notes' column is 'ERROR': this happens when an error is thrown during the search. Those records must be checked too before advancing to the next step.
 
@@ -143,12 +144,12 @@ _**Reading and using the results**_
 |Column name    |Data type  |Details                                               |
 |---            |:---:      |:---:                                                 |
 |id             |INT        |Unique numeric identifier                             |
-|Taxon          |CHAR/FACTOR|Scientific name of taxon                              |
-|Rank           |CHAR/FACTOR|Rank of taxon in the taxonomical hierarchy            |
-|Author         |CHAR/FACTOR|Name of the Author (as in input table)                |
-|Source         |CHAR/FACTOR|Source of taxon name information (as in input table)  |
+|Taxon          |CHAR       |Scientific name of taxon                              |
+|Rank           |CHAR       |Rank of taxon in the taxonomical hierarchy            |
+|Author         |CHAR       |Name of the Author (as in input table)                |
+|Source         |CHAR       |Source of taxon name information (as in input table)  |
 |Parent         |INT        |id of parent taxon                                    |
-|OrigID         |CHAR/FACTOR|original species code (as in input table)             |
+|OrigID         |CHAR       |original species code (as in input table)             |
 
 After running the function, you can check the output by reconstructing some branches of the tree. To do this, start from the lower rank ('Species') and go up by following he internal reference (go to the id reported in the 'Parent' column to find the parent taxon, and repeat until you reach the highest rank). Check that your results match with the original taxon tree. 
 
@@ -171,4 +172,186 @@ The taxon catalogue as it results after running this function can be post-proces
 ---
 
 ### <a name="IIP"></a>IIP
-*#TODO*
+
+The Institute for Fishery Research (IIP) has many digital data organized in MS Access DBs (.mdb format). Despite being already digitized, these data need some editing to be compatible with BioNoMo DB structure and organization. In particular, duplicate information has to be removed in order to generate single observational units. Then, all the available information about these units has to be gathered in a single table to make the primary and foreign keys correspond and preserve the integrity of the relations.
+
+#### Phase 1: generate unique observation units
+
+In BioNoMo, a unit is considered as an observation of a single species (there can be more than one individual), in a defined moment, in a defined place. In the IIP databases, the organization of these data is slightly different: sometimes, what can be considered as a unit in BioNoMo is actually divided in two or more different units, and some information is duplicated (this generally happens when two different boats on the same expedition catch the same species). To prepare the data for BioNoMo, duplicate units have to be removed and their information must be merged in a single unit.
+
+To do this, there is an R script named '01-remove_duplicates.R' inside the IIP folder. This script defines the function called `remove_duplicates()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
+
+`remove_duplicates()` takes the original units one by one, groups the ones that refer to the same species, location and time and merges the related information (count of individuals, total weight, fishery art etc.). The function takes just one argument:
+
+* __artfish.units.initial__: A data frame with the original units data, as they appear in the IIP DB (generally, in the table named 't_EspPesca'). See 'Data format' below for details about the required structure.
+
+_**Data format**_
+
+After exporting the table named 't_EspPesca' from the original DB, you have to import it in your R workspace with the structure described below (column names are case-sensitive). BEWARE: IF THE ORIGINAL ID CODES CHANGE DUE TO MERGING OR DELETION, YOU WILL HAVE TO CHANGE THOSE ACCORDINGLY.
+
+*artfish.units.initial* (data.frame)
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|Id_CenPes      |CHAR/FACTOR|Original id of fishery center (update if changed)     |
+|Id_Arte        |CHAR/FACTOR|Original id of fishery art (update if changed)        |
+|Id_UnidNo      |INT        |Number of fishing unit                                |
+|Id_EspLog      |CHAR/FACTOR|Original species id (update if changed)               |
+|Sex_Esp        |CHAR/FACTOR|Sex of specimens                                      |
+|Num_AmoEsp     |INT        |Number of specimens                                   |
+|Peso_AmoEsp    |INT        |Weight of specimens                                   |
+|DateF          |CHAR/FACTOR|Collection date (format: YYYY-MM-DD)                  |
+
+
+_**Reading and using the results**_
+
+When run, `remove_duplicates()` initially prints the original number of units, and then starts to merge them as described above, generating a new set of units consistent with BioNoMo requirements. The function progress will be printed each time 1,000 merged units are generated, and the final number of units is printed before the execution completes and the final result is returned. The execution can take a long time, depending on the number of units generated (typically, one minute is required to generate 10,000 unique observations on a 4th generation Core i7 machine).
+
+The function returns the units information in the form of a data frame. The output is structured as follows:
+
+*artfish.units* (data.frame)
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|Date           |CHAR       |Collection date (format: YYYY-MM-DD)                  |
+|id_CenPes      |CHAR       |Original id of fishery center                         |
+|id_GM          |CHAR       |Original id of gathering method (fishery art)         |
+|id_Sp          |CHAR       |Original species id                                   |
+|sex            |CHAR       |Sex of specimens                                      |
+|count          |INT        |Number of specimens                                   |
+|weight         |INT        |Weight of specimens                                   |
+
+This data frame can be directly used as input for the function used in phase 2.
+
+#### Phase 2: organize all relevant unit information
+
+Once you have all your basic unit information organized, you have to join additional data to each of your units. These data are found in different tables of the original DB, that you may have to restructure (see 'Data format' below). The data will be joint to the units table through the original id codes (BEWARE: IF THE ORIGINAL ID CODES CHANGE DUE TO MERGING OR DELETION, YOU WILL HAVE TO CHANGE THOSE ACCORDINGLY). 
+
+To join the data as described, there is an R script named '02-yield_units.R' inside the IIP folder. This script defines the function called `yield_units()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
+
+`yield_units()` takes the new merged units, as resulted from phase 1, and adds to each the relevant information found in other tables. The function takes just one argument:
+
+* __artfish.units__: Data frame of merged units as resulted from phase 1 (see 'Reading and using the results' in 'Phase 1' section).
+
+In addition to the units data, provided as an argument, `yield_units()` requires a number of data frames to be present in the R workspace. See the following section for the details.
+
+_**Data format**_
+
+The following tables describe the structure of the data frames that have to be present in your R workspace in order for `yield_units()` to work correctly. BEWARE: THE DATA FRAMES AND COLUMNS MUST BE EXACTLY NAMED AS SPECIFIED (NAMES ARE CASE-SENSITIVE).
+
+*saidas* (data.frame)
+
+This data frame contains the information found in the table named 't_Saidas' in the original DB, reorganized with the following structure:
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|Id_CenPes      |CHAR/FACTOR|Original id of fishery center (update if changed)     |
+|id_agent       |INT        |Numeric id of collecting agent (as in lookup table)   |
+|start          |CHAR/FACTOR|Time of expedition start (format: HH:MM:SS)           |
+|end            |CHAR/FACTOR|Time of expedition end (format: HH:MM:SS)             |
+|itinerary      |CHAR/FACTOR|Direction of travel                                   |
+|dateF          |CHAR/FACTOR|Expedition date  (format: YYYY-MM-DD)                 |
+
+
+*gathering_sites* (data.frame)
+
+This data frame has the same structure of the 'gathering_sites' table in the standard BioNoMo DB, and contains information about fishery centers.
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|id_site        |INT        |Numeric id of fishery center                          |
+|verbatimlocalityname|CHAR/FACTOR|Name of fishery center                           |
+|locality       |CHAR/FACTOR|Name of locality                                      |
+|municipality   |CHAR/FACTOR|Name of municipality                                  |
+|province       |CHAR/FACTOR|Name of province                                      |
+|district       |CHAR/FACTOR|Name of district                                      |
+|min_elev       |INT        |Minimum elevation (altitude) of site (if available)   |
+|max_elev       |INT        |Maximum elevation (altitude) of site (if available)   |
+|dtm_elev       |INT        |DTM elevation (altitude) of site (if available)       |
+|mgrs           |CHAR       |Military Grid Reference System code (if available)    |
+|orig_id        |CHAR/FACTOR|Original id of fishery center (update if changed)     |
+
+
+*lookup_gatheringmethods* (data.frame)
+
+This data frame has the same structure of the 'lookup_gatheringmethods' table in the standard BioNoMo DB, and contains information about fishery arts.
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|id_gmt         |INT        |Numeric id of gathering method                        |
+|gathering_method|CHAR/FACTOR|Description of gathering method                      |
+|orig_id        |CHAR_FACTOR|Original id of fishery art (update if changed)        |
+
+
+*lookup_taxoncatalogue* (data.frame)
+
+This data frame has the same structure of the final product of the functions in the 'Taxonomy' folder.
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|id             |INT        |Numeric id of taxon                                   |
+|Taxon          |CHAR       |Scientific name of taxon                              |
+|Rank           |CHAR       |Rank of taxon in the taxonomical hierarchy            |
+|Author         |CHAR       |Name of the Author (as in input table)                |
+|Source         |CHAR       |Source of taxon name information (as in input table)  |
+|Parent         |INT        |id of parent taxon                                    |
+|OrigID         |CHAR       |original species code (as in input table)             |
+
+
+_**Reading and using the results**_
+
+When run, `yield_units()` processes and joins the information in the data frames described below, in the following order:
+
+1. Expeditions: An expedition corresponds to a fishing event in a defined time, at a defined fishery center. The function prints a message to inform the user that the processing of expeditions started, and then prints the progress each time 1,000 expeditions have been processed. This operation can take a long time, depending on the number of expeditions present in the DB. When finished, the total number of expeditions found will be printed.
+2. Gathering methods (generally fast).
+3. Taxa (generally fast).
+4. Gathering sites (generally fast).
+
+When all these steps are complete, the function will print 'Process complete' and return a data frame containing all the available unit information, with the following structure:
+
+*artfish.units.final* (data.frame)
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|Date           |CHAR       |Collection date (format: YYYY-MM-DD)                  |
+|id_CenPes      |CHAR       |Original id of fishery center                         |
+|id_GM          |CHAR       |Original id of gathering method (fishery art)         |
+|id_Sp          |CHAR       |Original species id                                   |
+|sex            |CHAR       |Sex of specimens                                      |
+|count          |INT        |Number of specimens                                   |
+|weight         |INT        |Weight of specimens                                   |
+|DateF          |FACTOR     |Collection date (format: YYYY-MM-DD)                  |
+|Id_CenPesF     |FACTOR     |Original id of fishery center                         |
+|id_exp         |INT        |Numeric id of expedition                              |
+|id_agent       |INT        |Numeric id of collecting agent                        |
+|id_gmt         |INT        |Numeric id of gathering method                        |
+|id_taxon       |INT        |Numeric id of taxon                                   |
+|id_site        |INT        |Numeric id of fishery center                          |
+|start          |CHAR       |Time of expedition start (format: HH:MM:SS)           |
+|end            |CHAR       |Time of expedition end (format: HH:MM:SS)             |
+|itinerary      |CHAR       |Direction of travel                                   |
+
+This data frame can be directly used as input for the function used in phase 3. It is also the main table to generate the BioNoMo database, and can be directly submitted for the final pre-processing to be imported into the DB.
+
+#### Phase 3: extract expedition information
+
+As a last step, it is necessary to create a data frame with a unique record and all the relevant information for each expedition. These data can be extracted from the data frame generated in the previous phase. To do this, there is an R script named '03-yield_expeditions.R' inside the IIP folder. This script defines the function called `yield_expeditions()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
+
+`yield_expeditions()` goes through the units data frame, finds the unique expedition information and organizes it in a new data frame. The function takes just one argument:
+
+* __artfish.units.final__: Data frame of units information as resulted from phase 2 (see 'Reading and using the results' in 'Phase 2' section).
+
+_**Reading and using the results**_
+
+When run, `yield_expeditions()` prints the total number of expeditions found and starts reorganizing the related data. The function prints messages about the percentage of units that have been processed (with steps of 10%). When the processing is completed, the function returns a data frame containing information about the expeditions, with the following structure.
+
+*expeditions* (data.frame)
+
+|Column name    |Data type  |Details                                               |
+|---            |:---:      |:---:                                                 |
+|id_exp         |INT        |Numeric id of expedition                              |
+|start          |CHAR       |Time of expedition start (format: HH:MM:SS)           |
+|end            |CHAR       |Time of expedition end (format: HH:MM:SS)             |
+|itinerary      |CHAR       |Direction of travel                                   |
+
+This data frame can be directly submitted, together with 'artfish.units.final', for the final pre-processing to be imported into the DB.
