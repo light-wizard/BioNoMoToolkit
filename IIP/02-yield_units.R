@@ -39,9 +39,9 @@ yield_units<-function(artfish.units){
   }
   message('Processing taxa...')
   for(s in levels(as.factor(out$id_Sp))){
-    if(length(lookup_taxoncatalogue$id_sci_name[which(lookup_taxoncatalogue$orig_id==s)])==1){
+    if(length(lookup_taxoncatalogue$id[which(lookup_taxoncatalogue$OrigID==s)])==1){
       out$id_taxon[which(out$id_Sp==s)]<-
-        lookup_taxoncatalogue$id_sci_name[which(lookup_taxoncatalogue$orig_id==s)]
+        lookup_taxoncatalogue$id[which(lookup_taxoncatalogue$OrigID==s)]
     }else{
       out$id_taxon[which(out$id_Sp==s)]<-NA
     }
