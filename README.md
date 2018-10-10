@@ -23,7 +23,7 @@ You can see several folders in this repo, each named after a data provider, and 
 The first thing to do when you have a list of identified species is to check that the spelling is correct (no typos) and that the identification is sound (the species is actually present in your study area) and up-to-date (the given name is accepted and not a synonym). Then, you have to build the taxon tree and transform it in a table with internal hierarchical reference (if you are building a new DB and not using Specify or similar software with a pre-built structure).
 
 #### Phase 1: Check taxonomy
-You will find an R script named '01-checkTaxonomyWin.R' inside the Taxonomy folder. This script defines the function called `checkTaxonomy()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
+You will find an R script named '01-checkTaxonomy.R' inside the Taxonomy folder. This script defines the function called `checkTaxonomy()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
 Before using the function, be sure your R installation meets all of its dependencies. `checktaxonomy()` requires the following packages to be installed:
 
 * _psych_
@@ -31,7 +31,7 @@ Before using the function, be sure your R installation meets all of its dependen
 * _taxize_
 * _ggplot2_
 * _rgbif_
-* _maps_
+* _leaflet_
 
 You can install those with the `install.packages` command in R prompt.
 
@@ -45,20 +45,22 @@ You can install those with the `install.packages` command in R prompt.
 
     We use NCBI for animals because it is the most comprehensive resource, but particular species names can be manually checked on ITIS, WoRMS, FishBase etc. if needed.
 
-3. Searches for the accepted name on GBIF, and displays the records found in Southern Africa plotting the coordinates on a map. In this way, you can check if that species is actually present in the region.
+3. Searches for the accepted name on GBIF, and displays the records found in the region of interest specified by the user, plotting the coordinates on a map. In this way, you can check if that species is actually present in the region.
 
 `checkTaxonomy()` takes 4 arguments in the following order (or, as usual, by name):
 
-1. **specieslist**: a matrix or a data frame with at least 1 column, containing species names as they appear in the original data. If the matrix contains more than one column, the species names must be in the first one. View 'Data format' below for detail.
+1. **specieslist**: a character vector, or a matrix / data frame with at least 1 column, containing species names as they appear in the original data. If the matrix / data frame contains more than one column, the species names must be in the first one. View 'Data format' below for detail.
 2. **fir**: number of record (in order of appearance in the table) to start with (default=1).
 3. **las**: number of record (in order of appearance in the table) to end with (default=5). It is generally advised to execute the function with 5 species at a time to avoid overloading the internet connection and to keep the output map readable.
 4. **src**: Source of information. Input 'NCBI' for NCBI, 'iPlant_TNRS' for Tropicos, or 'MSW3' for Mammal Species of the World 3rd edition (default='NCBI').
+5. **ctry**: Country (2 letters ISO code) to search in (default=NULL).
+6. **cont**: Continent (full name) to search in. Has to be set to NULL if you specify a country code in **ctry** argument.
 
 _**Data format**_
 
-The species list to be fed to the function has to be a matrix or a data frame containing at least one column (the first) with species names:
+The species list to be fed to the function has to be a character vector, or a matrix / data frame containing at least one column (the first) with species names:
 
-*specieslist* (data.frame / matrix)
+*specieslist* (matrix / data.frame)
 
 |Column name    |Data type  |Details                            |
 |---            |:---:      |:---:                              |
@@ -66,7 +68,7 @@ The species list to be fed to the function has to be a matrix or a data frame co
 
 _**Reading and using the results**_
 
-Each time the function is executed, a table is returned in the standard output, containing the species names fed to the source, the correct name found (if any), and the accepted name. In addition, a map is plotted with the position of the species actually found in Southern Africa. For each species found in the region, the user must copy the accepted name returned from the source and paste it in the original data table or in a new table, keeping the reference (the taxon code, if any) to the original name. If the species is not found in the region, it is better to check the actual distribution manually before inserting it among the species present in the dataset.
+Each time the function is executed, a table is returned in the standard output, containing the species names fed to the source, the correct name found (if any), and the accepted name. In addition, an interactive map is plotted with the positions of the species actually found in the region of interest. Each observation is identified by a point, and more information is available by clicking on the point. For each species found in the region, the user must copy the accepted name returned from the source and paste it in the original data table or in a new table, keeping the reference (the taxon code, if any) to the original name. If the species is not found in the region, it is better to check the actual distribution manually before inserting it among the species present in the dataset.
 
 #### Phase 2: Build the taxon tree
 Once you're sure about your species names, you have to build the related tree by obtaining information about all the associated parent taxa. To do this, there is an R script named '02-taxonomic_names.R' inside the Taxonomy folder. This script defines the function called `get_tree()`. To create the function inside your R working environment, just source the script. You can do it by clicking the 'source' button after loading the script in RStudio editor, or in R prompt with the `source` command. Type `?source` for help on how to use it.
